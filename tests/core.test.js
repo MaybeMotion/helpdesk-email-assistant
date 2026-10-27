@@ -50,9 +50,10 @@ test('MV3 permissions contain no email, tab or cloud access', async () => {
   const manifest = JSON.parse(await readFile(new URL('../manifest.json', import.meta.url)));
   assert.equal(manifest.manifest_version, 3);
   assert.deepEqual(manifest.permissions, ['sidePanel', 'storage']);
-  assert.deepEqual(manifest.optional_host_permissions, ['http://localhost:11434/*']);
+  assert.deepEqual(manifest.host_permissions, ['http://127.0.0.1/*']);
+  assert.equal(manifest.content_security_policy.extension_pages, "script-src 'self'; object-src 'self'; connect-src http://127.0.0.1:11434");
   assert.equal(manifest.side_panel.default_path, 'sidepanel.html');
-  assert.ok(!manifest.content_scripts && !manifest.host_permissions);
+  assert.ok(!manifest.content_scripts && !manifest.optional_host_permissions);
 });
 
 test('manifest icons are valid PNG files at every declared size', async () => {

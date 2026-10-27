@@ -4,7 +4,7 @@ import { rewrite, listModels } from '../ollama.js';
 const parameters = { text: 'Please check the update.', tone: 'professional', model: 'llama3.2:3b' };
 test('Ollama sends only explicit draft content to the fixed loopback endpoint', async t => {
   t.mock.method(globalThis, 'fetch', async (url, options) => {
-    assert.equal(url, 'http://localhost:11434/api/chat');
+    assert.equal(url, 'http://127.0.0.1:11434/api/chat');
     assert.equal(options.redirect, 'error');
     assert.equal(options.credentials, 'omit');
     const data = JSON.parse(options.body);
@@ -21,7 +21,7 @@ test('Ollama sends only explicit draft content to the fixed loopback endpoint', 
 });
 test('connection lists only installed local models and removes duplicates', async t => {
   t.mock.method(globalThis, 'fetch', async (url, options) => {
-    assert.equal(url, 'http://localhost:11434/api/tags');
+    assert.equal(url, 'http://127.0.0.1:11434/api/tags');
     assert.equal(options.credentials, 'omit');
     return Response.json({ models: [{ name: 'llama3.2:3b' }, { name: 'llama3.2:3b' }, { name: 'gpt-oss:120b-cloud' }, { name: 'remote:latest', remote_host: 'cloud' }, { name: 'other:latest', remote_model: 'remote' }] });
   });
@@ -33,7 +33,7 @@ test('connection and model errors give actionable feedback', async t => {
   fetch.mock.mockImplementation(async () => new Response('', { status: 403 }));
   await assert.rejects(rewrite(parameters), /HTTP 403.*OLLAMA_ORIGINS/);
   fetch.mock.mockImplementation(async () => new Response('', { status: 404 }));
-  await assert.rejects(rewrite(parameters), /HTTP 404.*installed local model/);
+  await assert.rejects(rewrite(parameters), /HTTP 404.*ollama pull qwen2.5:3b/);
   fetch.mock.mockImplementation(async () => Response.json({ message: { content: '' } }));
   await assert.rejects(rewrite(parameters), /empty suggestion/);
 });
