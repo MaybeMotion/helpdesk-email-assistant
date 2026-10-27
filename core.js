@@ -35,8 +35,13 @@ export function improve(text, tone) {
   }
   return { text: result, changes };
 }
-export function compose(body, signature) {
-  return [body.trim(), signature.trim()].filter(Boolean).join('\n\n');
+export function compose(body) {
+  const message = body.trim();
+  if (!message) return '';
+  const signoff = 'Kind regards,\nLouis';
+  // Normalise an existing closing without duplicating it or changing other names.
+  const content = message.replace(/(?:^|\r?\n)[\t ]*kind regards,[\t ]*(?:\r?\n[\t ]*louis)?$/i, '').trimEnd();
+  return [content, signoff].filter(Boolean).join('\n\n');
 }
 export function validateModel(model) {
   return typeof model === 'string' && /^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,99}$/.test(model) && !/(?:^|[-:])cloud(?:$|[-:])/i.test(model);

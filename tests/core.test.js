@@ -17,10 +17,21 @@ test('preserves technical details, paragraphs and uncertainty', () => {
   assert.equal(improve(text, 'professional').text, text);
   assert.deepEqual(improve(text, 'professional').changes, []);
 });
-test('composition includes signature once and handles empty fields', () => {
-  assert.equal(compose(' Hello ', ' Regards '), 'Hello\n\nRegards');
-  assert.equal(compose('Hello', ''), 'Hello');
-  assert.equal(compose('', ''), '');
+test('composition always uses the fixed closing and does not copy empty drafts', () => {
+  assert.equal(compose(' Hello '), 'Hello\n\nKind regards,\nLouis');
+  assert.equal(compose(''), '');
+  assert.equal(compose(' \n\t '), '');
+});
+test('composition normalises an existing closing without duplicating it', () => {
+  const expected = 'Hello\n\nKind regards,\nLouis';
+  assert.equal(compose('Hello\n\nKind regards,\nLouis'), expected);
+  assert.equal(compose('Hello\n\nkind REGARDS,\r\nLOUIS  '), expected);
+  assert.equal(compose('Hello\n\nKind regards,'), expected);
+  assert.equal(compose('Kind regards,\nLouis'), 'Kind regards,\nLouis');
+});
+test('composition preserves other names and text', () => {
+  assert.equal(compose('Hello Louis,\n\nThank you,\nSam'), 'Hello Louis,\n\nThank you,\nSam\n\nKind regards,\nLouis');
+  assert.equal(compose('Hello\n\nKind regards,\nSam'), 'Hello\n\nKind regards,\nSam\n\nKind regards,\nLouis');
 });
 test('18 grouped templates include general email and IT support', () => {
   assert.equal(templates.length, 18);

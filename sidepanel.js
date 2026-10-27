@@ -1,12 +1,15 @@
 import { templates, improve, compose } from './core.js';
 import { listModels, rewrite } from './ollama.js';
 const $ = id => document.getElementById(id);
-const fields = ['body', 'signature', 'tone', 'model'];
+const fields = ['body', 'tone', 'model'];
+const sectionIds = ['quick-start', 'draft', 'review', 'ai-settings'];
+let sectionsReady = false;
+let sectionStates = {};
 let enabled = false, revision = 0, suggestionRevision = 0, controller;
 let saving = Promise.resolve();
 const status = text => { $('status').textContent = text; };
 const improveStatus = text => { $('improve-status').textContent = text; };
-function state() { return Object.fromEntries([...fields.map(key => [key, $(key).value]), ['ollama', enabled], ['dark', document.body.classList.contains('dark')]]); }
+function state() { return Object.fromEntries([...fields.map(key => [key, $(key).value]), ['ollama', enabled], ['dark', document.body.classList.contains('dark')], ['sections', Object.fromEntries(sectionIds.map(id => [id, $(id).open]))]]); }
 function save() {
   const snapshot = state();
   $('saved').textContent = 'Saving…';
@@ -44,6 +47,7 @@ async function init() {
   try {
     const { assistant: data = {} } = await chrome.storage.local.get('assistant');
     for (const key of fields) if (typeof data[key] === 'string') $(key).value = data[key];
+    for (const id of sectionIds) if (typeof data.sections?.[id] === 'boolean') $(id).open = data.sections[id];
     // Restore draft content even when permission inspection fails.
     document.body.classList.toggle('dark', typeof data.dark === 'boolean' ? data.dark : matchMedia('(prefers-color-scheme: dark)').matches);
     if (data.ollama) {
@@ -52,18 +56,24 @@ async function init() {
       if (!enabled) improveStatus('Local Ollama permission is missing. Enable it in Local AI settings to use AI rewriting.');
     }
     $('ollama').checked = enabled;
-    // Remove the obsolete subject from our saved state without touching other extension keys.
-    if (Object.hasOwn(data, 'subject')) save();
+    // Remove obsolete subject and custom signature fields; keep the draft and preferences.
+    if (Object.hasOwn(data, 'subject') || Object.hasOwn(data, 'signature')) save();
   } catch { status('Could not restore your saved draft.'); }
   count(); mode();
+  sectionStates = Object.fromEntries(sectionIds.map(id => [id, $(id).open]));
+  sectionsReady = true;
 }
 for (const key of ['body', 'tone', 'model']) $(key).addEventListener('input', changed);
-$('signature').addEventListener('input', save);
+for (const id of sectionIds) $(id).addEventListener('toggle', () => {
+  if (!sectionsReady || sectionStates[id] === $(id).open) return;
+  sectionStates[id] = $(id).open;
+  save();
+});
 $('theme').onclick = () => { document.body.classList.toggle('dark'); save(); };
 $('configure-ai').onclick = openSettings;
 $('insert').onclick = () => {
   if ($('body').value.trim() && !confirm('Replace the current message with this template?')) return;
-  const template = templates[Number($('template').value)]; $('body').value = template.body; changed(); status('Template inserted. Replace placeholders and verify the details.'); $('body').focus();
+  const template = templates[Number($('template').value)]; $('body').value = template.body; changed(); status('Template inserted. Replace placeholders and verify the details.'); $('draft').open = true; $('body').focus();
 };
 $('ollama').onchange = async () => {
   const requested = $('ollama').checked;
@@ -100,7 +110,7 @@ $('check-ollama').onclick = async () => {
 };
 $('improve').onclick = async () => {
   const text = $('body').value;
-  if (!text.trim()) { improveStatus('Write a message first, then click Improve wording.'); $('body').focus(); return; }
+  if (!text.trim()) { improveStatus('Write a message first, then click Improve wording.'); $('draft').open = true; $('body').focus(); return; }
   const current = revision, useOllama = enabled;
   $('review').hidden = true;
   busy(true);
@@ -122,7 +132,7 @@ $('improve').onclick = async () => {
     $('apply').disabled = unchanged;
     const notes = unchanged ? [useOllama ? 'Ollama returned the same wording. Your message is unchanged.' : 'No matching offline rules. For a full rewrite, enable local Ollama using “Set up local AI”.'] : result.changes;
     $('changes').replaceChildren(...notes.map(text => { const li = document.createElement('li'); li.textContent = text; return li; }));
-    suggestionRevision = current; $('review').hidden = false;
+    suggestionRevision = current; $('review').open = true; $('review').hidden = false;
     improveStatus(unchanged ? 'Checked — no wording changes. See the result below.' : 'Suggestion ready below. Review it before applying.');
     $('review-heading').focus({ preventScroll: true });
     $('review').scrollIntoView({ block: 'start', behavior: 'smooth' });
@@ -133,10 +143,10 @@ $('improve').onclick = async () => {
 };
 $('cancel').onclick = () => controller?.abort();
 $('suggestion').addEventListener('input', () => { $('apply').disabled = suggestionRevision !== revision || $('suggestion').value === $('body').value; });
-$('apply').onclick = () => { if (suggestionRevision !== revision) { improveStatus('Your draft changed. Generate a fresh suggestion.'); return; } $('body').value = $('suggestion').value; changed(); improveStatus('Suggestion applied.'); $('body').focus(); };
-$('dismiss').onclick = () => { $('review').hidden = true; improveStatus('Suggestion dismissed. Your draft is unchanged.'); $('improve').focus(); };
-$('copy').onclick = async () => { const text = compose($('body').value, $('signature').value); if (!text) { status('Write a draft first.'); return; } try { await navigator.clipboard.writeText(text); status('Message copied. Review it in Zoho or your email client before sending.'); } catch { status('Clipboard access failed. Select and copy the draft manually.'); } };
-$('clear').onclick = () => { if (!confirm('Clear the saved message? Your signature and preferences will stay.')) return; $('body').value = ''; changed(); status('Draft cleared.'); };
+$('apply').onclick = () => { if (suggestionRevision !== revision) { improveStatus('Your draft changed. Generate a fresh suggestion.'); return; } $('body').value = $('suggestion').value; changed(); improveStatus('Suggestion applied.'); $('draft').open = true; $('body').focus(); };
+$('dismiss').onclick = () => { $('review').hidden = true; improveStatus('Suggestion dismissed. Your draft is unchanged.'); $('draft').open = true; $('improve').focus(); };
+$('copy').onclick = async () => { const text = compose($('body').value); if (!text) { status('Write a draft first.'); return; } try { await navigator.clipboard.writeText(text); status('Message copied. Review it in Zoho or your email client before sending.'); } catch { status('Clipboard access failed. Select and copy the draft manually.'); } };
+$('clear').onclick = () => { if (!confirm('Clear the saved message? Your preferences will stay.')) return; $('body').value = ''; changed(); status('Draft cleared.'); };
 // Keep controls disabled until restoration finishes, so typing cannot be overwritten.
 const controls = [...document.querySelectorAll('button,input,select,textarea')];
 controls.forEach(control => { control.disabled = true; });

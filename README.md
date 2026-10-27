@@ -1,6 +1,6 @@
 # Helpdesk Email Assistant
 
-A private Chrome side panel for everyday and IT support emails. Vanilla JavaScript, HTML and CSS; Manifest V3; no build step, trackers, inbox access or automatic sending. Version 1.1 adds purple accents and extension icons, more quick starts, and clearer improvement feedback.
+A private Chrome side panel for everyday and IT support emails. Vanilla JavaScript, HTML and CSS; Manifest V3; no build step, trackers, inbox access or automatic sending. Version 1.2 adds collapsible sections and a fixed closing, while retaining purple accents, extension icons, and 18 quick starts.
 
 ## Install or update in Chrome
 
@@ -13,13 +13,22 @@ To update, replace the files in the **same folder** you originally loaded, keepi
 
 ## Write a message
 
-Choose a quick start or write your message, then select Professional, Friendly, Concise or Formal and click **Improve wording**. Feedback appears next to the button, and completed suggestions scroll into view for review. Edit the suggestion if needed, then choose Apply or Dismiss. Your original draft is never replaced automatically. Local AI requests show a waiting state and can be cancelled.
+Click a section header to minimise or expand **Quick start**, **Your draft**, **Review suggestion** or **Local AI settings**. The headers also work with the keyboard: focus one with Tab, then press Enter or Space. Each section’s open or closed state is remembered locally.
+
+Choose a quick start or write your message, then select Professional, Friendly, Concise or Formal and click **Improve wording**. Feedback appears next to the button, and completed suggestions scroll into view for review. Edit the suggestion if needed, then choose Apply or Dismiss. Your original draft is never replaced automatically. Local AI requests show a waiting state and can be cancelled. Inserting a template or applying a suggestion opens Your draft automatically. Generating a new suggestion opens Review suggestion so the result remains easy to find.
 
 There are **18 quick starts**, grouped into **Everyday email**, **Working together** and **IT support**. They cover general correspondence as well as support requests. Replace any `[placeholders]` and verify the details before use. Inserting a template asks before replacing an existing message.
 
-Add a signature and click **Copy message** to copy the message and signature. There is no subject field and no subject line is copied, so you can paste straight into an existing Zoho conversation or another email editor. Review the result and send it yourself.
+Click **Copy message** to copy a nonempty message with this fixed closing:
 
-The draft, signature, model preference and theme save automatically in **Chrome local storage**, not Chrome Sync. Clear draft removes the message while retaining your signature and preferences. One draft is saved per Chrome profile; simultaneous panels use the latest saved state. Explicit copying places text on your system clipboard, outside extension storage.
+```text
+Kind regards,
+Louis
+```
+
+The Personal touch box and custom signature field have been removed. An existing matching closing is not duplicated, and a draft ending in “Kind regards,” gains the name. An empty draft copies nothing. There is no subject field and no subject line is copied, so you can paste straight into an existing Zoho conversation or another email editor. Review the result and send it yourself.
+
+The draft, section states, model preference and theme save automatically in **Chrome local storage**, not Chrome Sync. Updating removes legacy saved custom signatures while retaining the message and other preferences. Clear draft removes the message while retaining your preferences; the fixed closing is added to future copied messages. One draft is saved per Chrome profile; simultaneous panels use the latest saved state. Explicit copying places text on your system clipboard, outside extension storage.
 
 ## Offline rules (default)
 
@@ -29,7 +38,7 @@ These are limited wording aids, not full grammar checking, technical verificatio
 
 ## Optional local AI with Ollama
 
-Ollama mode makes a loopback HTTP request to **your computer**. The extension contacts only `http://localhost:11434`, never a cloud AI endpoint. Clicking Improve submits the message and chosen tone; your signature is excluded. **Check connection & find models** requests the installed model list (`/api/tags`) without sending your draft.
+Ollama mode makes a loopback HTTP request to **your computer**. The extension contacts only `http://localhost:11434`, never a cloud AI endpoint. Clicking Improve submits the message and chosen tone; the fixed closing is added when copying. **Check connection & find models** requests the installed model list (`/api/tags`) without sending your draft.
 
 Persistent extension data stays in `chrome.storage.local`. Ollama is a separate process: its memory, logs and retention depend on your installation. Leave AI disabled if draft data must stay exclusively inside Chrome storage even during processing.
 
@@ -71,11 +80,11 @@ Set `CHROMIUM_PATH` if Chromium is elsewhere. These checks do not establish a re
 
 Manual Chrome checks:
 
-- Open from the toolbar; edit a message, close/reopen the panel, and verify restoration.
-- Try quick starts from each group; cancel and accept replacement confirmations.
-- Generate each tone, check visible feedback and result scrolling, then dismiss or apply a suggestion. Try text with no matching offline rules.
-- Copy with and without a signature; verify that the clipboard contains no subject line.
-- Toggle theme and reopen; clear the draft and verify the signature survives.
+- Open from the toolbar; edit a message, minimise some sections, close/reopen the panel, and verify both the draft and section states are restored. Test section headers with Enter and Space as well as clicks.
+- Try quick starts from each group; cancel and accept replacement confirmations. Insert a template with Your draft minimised and verify that it opens automatically.
+- Generate each tone, check that Review suggestion opens and scrolls into view, then dismiss or apply a suggestion. Apply with Your draft minimised and verify that it opens. Try text with no matching offline rules.
+- Copy a message and verify the exact “Kind regards,” / “Louis” closing and no subject line. Try an existing matching closing, a trailing “Kind regards,” and an empty draft.
+- Toggle theme and reopen; clear the draft and verify preferences survive and a future copied message still receives the fixed closing. When updating from an older version, check that the message remains and the custom signature is no longer used.
 - With Ollama disabled, verify no requests in the panel's DevTools Network tab.
 - Enable Ollama, approve permission, discover models, and try a local model. Test a missing model, stopped server, cancellation and edits during a request. Disable it and verify offline behavior.
 

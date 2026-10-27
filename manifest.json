@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Helpdesk Email Assistant",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Compose support emails privately, with offline tools and optional local Ollama assistance.",
   "permissions": [
     "sidePanel",
