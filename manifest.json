@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "Helpdesk Email Assistant",
+  "version": "1.0.0",
+  "description": "Compose support emails privately, with offline tools and optional local Ollama assistance.",
+  "permissions": ["sidePanel", "storage"],
+  "optional_host_permissions": ["http://localhost:11434/*"],
+  "action": {"default_title": "Open Helpdesk Email Assistant"},
+  "background": {"service_worker": "background.js"},
+  "side_panel": {"default_path": "sidepanel.html"},
+  "content_security_policy": {"extension_pages": "script-src 'self'; object-src 'self'; connect-src http://localhost:11434"}
+}
