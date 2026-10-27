@@ -18,18 +18,21 @@ test('preserves technical details, paragraphs and uncertainty', () => {
   assert.deepEqual(improve(text, 'professional').changes, []);
 });
 test('composition includes signature once and handles empty fields', () => {
-  assert.equal(compose(' Update ', ' Hello ', ' Regards '), 'Subject: Update\n\nHello\n\nRegards');
-  assert.equal(compose('', 'Hello', ''), 'Hello');
-  assert.equal(compose('', '', ''), '');
+  assert.equal(compose(' Hello ', ' Regards '), 'Hello\n\nRegards');
+  assert.equal(compose('Hello', ''), 'Hello');
+  assert.equal(compose('', ''), '');
 });
-test('six complete reusable templates', () => {
-  assert.equal(templates.length, 6);
-  assert.equal(new Set(templates.map(t => t.name)).size, 6);
-  for (const template of templates) assert.ok(template.subject && template.body);
+test('18 grouped templates include general email and IT support', () => {
+  assert.equal(templates.length, 18);
+  assert.equal(new Set(templates.map(t => t.name)).size, 18);
+  assert.deepEqual([...new Set(templates.map(t => t.group))], ['Everyday email', 'Working together', 'IT support']);
+  for (const template of templates) assert.ok(template.body && template.group && !Object.hasOwn(template, 'subject'));
 });
 test('model identifiers are constrained', () => {
   assert.ok(validateModel('llama3.2:3b'));
   assert.ok(!validateModel(''));
+  assert.ok(!validateModel('gpt-oss:120b-cloud'));
+  assert.ok(!validateModel('model:cloud'));
   assert.ok(!validateModel('bad model\n'));
 });
 test('MV3 permissions contain no email, tab or cloud access', async () => {
@@ -39,4 +42,15 @@ test('MV3 permissions contain no email, tab or cloud access', async () => {
   assert.deepEqual(manifest.optional_host_permissions, ['http://localhost:11434/*']);
   assert.equal(manifest.side_panel.default_path, 'sidepanel.html');
   assert.ok(!manifest.content_scripts && !manifest.host_permissions);
+});
+
+test('manifest icons are valid PNG files at every declared size', async () => {
+  const manifest = JSON.parse(await readFile(new URL('../manifest.json', import.meta.url)));
+  for (const [size, filename] of Object.entries(manifest.icons)) {
+    const bytes = await readFile(new URL('../' + filename, import.meta.url));
+    assert.equal(bytes.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
+    assert.equal(bytes.readUInt32BE(16), Number(size));
+    assert.equal(bytes.readUInt32BE(20), Number(size));
+    assert.equal(manifest.action.default_icon[size], filename);
+  }
 });

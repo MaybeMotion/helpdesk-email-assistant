@@ -1,69 +1,82 @@
 # Helpdesk Email Assistant
 
-A private Chrome side panel for IT support email writing. Vanilla JavaScript, HTML and CSS; Manifest V3; no build step, trackers, email access or automatic sending.
+A private Chrome side panel for everyday and IT support emails. Vanilla JavaScript, HTML and CSS; Manifest V3; no build step, trackers, inbox access or automatic sending. Version 1.1 adds purple accents and extension icons, more quick starts, and clearer improvement feedback.
 
-## Install in Chrome
+## Install or update in Chrome
 
 1. Download this repository (Code → Download ZIP) and extract it, or clone it.
-2. Open `chrome://extensions` in Chrome 114 or newer (current Chrome recommended).
+2. Open `chrome://extensions` in Chrome 116 or newer (current Chrome recommended).
 3. Enable **Developer mode**, click **Load unpacked**, and choose the folder containing `manifest.json`.
 4. Pin Helpdesk Email Assistant from the Extensions menu. Click its toolbar icon to open the side panel.
 
-After updating files, click Reload on the extension card and reopen the panel.
+To update, replace the files in the **same folder** you originally loaded, keeping the folder path unchanged. Click **Reload** on the extension card, then close and reopen the side panel. Keep the existing extension installed to retain its ID and local draft; removing and reinstalling it deletes local storage and may change its ID. If the ID changes, update Ollama's allowed origin too.
 
-## Write an email
+## Write a message
 
-Choose a support template or enter a subject and message. Select Professional, Friendly, Concise or Formal, then click **Improve wording**. Review or edit the separate suggestion and choose Apply or Dismiss. Your original message is never replaced automatically. Enter a signature and click **Copy email** to copy the subject, message and signature. Paste into your email client, check the details, and send it yourself.
+Choose a quick start or write your message, then select Professional, Friendly, Concise or Formal and click **Improve wording**. Feedback appears next to the button, and completed suggestions scroll into view for review. Edit the suggestion if needed, then choose Apply or Dismiss. Your original draft is never replaced automatically. Local AI requests show a waiting state and can be cancelled.
 
-The six templates cover first responses, requesting details, troubleshooting, progress updates, resolution checks and closure. Template insertion asks before replacing a draft. Verify statements about resolutions and request closure before using them.
+There are **18 quick starts**, grouped into **Everyday email**, **Working together** and **IT support**. They cover general correspondence as well as support requests. Replace any `[placeholders]` and verify the details before use. Inserting a template asks before replacing an existing message.
 
-The draft, signature, model preference and theme save automatically in **Chrome local storage**, not Chrome Sync. Clear draft removes the saved subject and message, retaining preferences and signature. Removing the extension deletes its local storage. One draft is saved per Chrome profile; simultaneous panels use the latest saved state. Clipboard copying is an explicit user action and puts text on your system clipboard, outside extension storage.
+Add a signature and click **Copy message** to copy the message and signature. There is no subject field and no subject line is copied, so you can paste straight into an existing Zoho conversation or another email editor. Review the result and send it yourself.
+
+The draft, signature, model preference and theme save automatically in **Chrome local storage**, not Chrome Sync. Clear draft removes the message while retaining your signature and preferences. One draft is saved per Chrome profile; simultaneous panels use the latest saved state. Explicit copying places text on your system clipboard, outside extension storage.
 
 ## Offline rules (default)
 
-No network requests are made in the default mode. Improvements use small, documented phrase substitutions and whitespace cleanup, not AI. For example, Professional replaces “ASAP” with “as soon as possible”, Concise replaces “in order to” with “to”, and Formal replaces “can't” with “cannot”. The review panel reports matching changes. These are conservative wording aids, not grammar checking, technical verification or a full semantic rewrite. No match means no wording change.
+No network requests are made in the default mode. Improvements use phrase substitutions and whitespace cleanup, not AI. For example, Professional replaces “ASAP” with “as soon as possible”, Concise replaces “in order to” with “to”, and Formal replaces “can't” with “cannot”. The review panel reports matching changes and explicitly tells you when no rule changed your wording.
+
+These are limited wording aids, not full grammar checking, technical verification or semantic rewriting. Having Ollama installed does not enable it automatically: choose **Set up local AI** if you want local model suggestions.
 
 ## Optional local AI with Ollama
 
-Ollama mode is an explicit exception to the no-network default: it makes a loopback HTTP request to **your computer**, never to an external AI provider. Only the message and tone are submitted when you click Improve; the subject and signature are excluded. The extension does not send email, inspect websites, or read your inbox. All persistent extension data stays in `chrome.storage.local`. Ollama is a separate process: its memory, logs and retention are governed by your local Ollama installation, so do not use AI mode if you require draft data to stay exclusively inside Chrome storage even during processing.
+Ollama mode makes a loopback HTTP request to **your computer**. The extension contacts only `http://localhost:11434`, never a cloud AI endpoint. Clicking Improve submits the message and chosen tone; your signature is excluded. **Check connection & find models** requests the installed model list (`/api/tags`) without sending your draft.
 
-1. Install/update Ollama on the same computer as Chrome. Download a **local** model while online, for example `ollama pull llama3.2`. Do not select an Ollama cloud model. For strict local-only operation, also configure `OLLAMA_NO_CLOUD=1` in the Ollama server environment and restart it; localhost alone does not prevent a separately configured Ollama server from using cloud models. Once downloaded, local inference works without Internet access.
-2. In `chrome://extensions`, copy this extension's **ID**. Configure Ollama to permit the exact origin `chrome-extension://YOUR_EXTENSION_ID`, then restart Ollama. Do not use a wildcard origin.
-3. On macOS, run `launchctl setenv OLLAMA_ORIGINS "chrome-extension://YOUR_EXTENSION_ID"`, quit Ollama completely, then reopen it. On Windows, quit Ollama, add the user environment variable `OLLAMA_ORIGINS` with that value in system settings, then reopen Ollama. For a Linux systemd service, use `sudo systemctl edit ollama` and add:
+Persistent extension data stays in `chrome.storage.local`. Ollama is a separate process: its memory, logs and retention depend on your installation. Leave AI disabled if draft data must stay exclusively inside Chrome storage even during processing.
+
+1. Install/update Ollama on the same computer as Chrome and download a **local** model while online, for example `ollama pull llama3.2`. Once downloaded, local inference can work without Internet access. Cloud model names are rejected, and model-list entries marked as remote are excluded. Also configure **`OLLAMA_NO_CLOUD=1`** in the Ollama server environment and restart it: client-side checks cannot guarantee the configuration of a separate Ollama server.
+2. Click **Set up local AI**. The settings show this extension's exact origin, such as `chrome-extension://YOUR_EXTENSION_ID`. Configure Ollama to allow that origin in `OLLAMA_ORIGINS`, then restart Ollama. Do not use a wildcard origin.
+3. On macOS, run `launchctl setenv OLLAMA_ORIGINS "chrome-extension://YOUR_EXTENSION_ID"` and `launchctl setenv OLLAMA_NO_CLOUD "1"`, then quit Ollama completely and reopen it. On Windows, quit Ollama, add the user environment variables `OLLAMA_ORIGINS` and `OLLAMA_NO_CLOUD` with those values in system settings, then reopen it. For a Linux systemd service, use `sudo systemctl edit ollama` and add:
 
    ```ini
    [Service]
    Environment="OLLAMA_ORIGINS=chrome-extension://YOUR_EXTENSION_ID"
+   Environment="OLLAMA_NO_CLOUD=1"
    ```
 
-   Then run `sudo systemctl daemon-reload` and `sudo systemctl restart ollama`. For a manually started server, set `OLLAMA_ORIGINS=chrome-extension://YOUR_EXTENSION_ID ollama serve` in its terminal instead. Stop an existing server first if the port is occupied.
-4. Keep Ollama bound to loopback (the default). This extension deliberately supports only `http://localhost:11434`, not remote hosts or configurable endpoints.
-5. Expand **Local AI settings**, enable **Use local Ollama**, and grant Chrome's optional localhost permission. Enter the exact installed model name (check `ollama list`), such as `llama3.2` or `llama3.2:3b`.
-6. Write a short draft and click Improve. Review the suggestion carefully: models can invent details. Requests time out after two minutes; edits cancel pending suggestions. Disable Ollama to revoke the optional host permission and return to offline rules. Errors never silently fall back or overwrite your draft.
+   Then run `sudo systemctl daemon-reload` and `sudo systemctl restart ollama`. For a manually started server, use `OLLAMA_NO_CLOUD=1 OLLAMA_ORIGINS=chrome-extension://YOUR_EXTENSION_ID ollama serve` instead. Stop an existing server first if its port is occupied.
+4. Keep Ollama bound to loopback (the default). Enable **Use local Ollama** and approve Chrome's optional localhost permission.
+5. Click **Check connection & find models**, then choose an installed local model from the model field's suggestions. You can also type its exact name from `ollama list`, such as `llama3.2:3b`.
+6. Write a draft and click Improve. Review the result carefully: models can invent details. Requests time out after two minutes, and edits cancel pending suggestions. Disable Ollama to revoke the optional host permission and return to offline rules. Errors do not silently switch modes or overwrite your message.
 
-A connection error usually means Ollama is stopped. HTTP 403 usually means the extension origin needs to be allowed; HTTP 404 can mean the model is missing. A reinstalled unpacked extension may have a new ID; update the origin accordingly. Chrome permissions and Ollama origin configuration are both required. Local Ollama integration must be tested on your own computer; a cloud development machine cannot access your desktop's localhost.
+Connection feedback distinguishes an unreachable server, blocked origin (HTTP 403), missing model or endpoint (HTTP 404), and invalid responses. Check Ollama is running, the exact extension origin is allowed, and the model is installed. Chrome permissions and Ollama origin configuration are both required. Your desktop's Ollama cannot be reached from a cloud development machine; verify the live connection locally.
 
 ## Development and tests
 
-Node.js 20+ is recommended for development tests. There are no npm dependencies or build commands:
+Node.js 20+ is recommended. There are no application dependencies or build commands:
 
 ```sh
 npm test
 node --check sidepanel.js
+node --check ollama.js
 node --check background.js
 ```
 
-Unit tests cover tone substitutions, change reporting, preservation of technical text, email composition, templates, model identifiers and least-privilege manifest settings. Browser interaction tests live in `tests/browser.cjs`; they require Playwright and Chromium installed separately, and simulate Chrome APIs rather than loading a real extension. Run with `NODE_PATH=/path/to/node_modules node tests/browser.cjs` (optionally set `CHROMIUM_PATH`).
+`core.js` contains templates and offline text helpers; `ollama.js` handles local model discovery and rewriting. Unit tests cover the core behavior and local AI client. Browser interaction tests in `tests/browser.cjs` use Playwright and Chromium installed separately, with simulated Chrome APIs and Ollama responses:
+
+```sh
+NODE_PATH=/path/to/node_modules node tests/browser.cjs
+```
+
+Set `CHROMIUM_PATH` if Chromium is elsewhere. These checks do not establish a real desktop Ollama connection or Chrome side-panel integration. The cloud machine's managed Chromium policy blocks installing unpacked extensions, so actual extension installation must be checked on your own computer.
 
 Manual Chrome checks:
 
-- Open from the toolbar, edit a draft, close/reopen the panel and verify restoration.
-- Insert a template; cancel and accept replacement confirmations.
-- Generate each tone, dismiss a suggestion, then generate and apply another.
-- Copy with and without a signature; verify clipboard text in a local text editor.
-- Toggle theme, reopen, and verify preference persistence.
-- Clear a draft and verify signature survives.
+- Open from the toolbar; edit a message, close/reopen the panel, and verify restoration.
+- Try quick starts from each group; cancel and accept replacement confirmations.
+- Generate each tone, check visible feedback and result scrolling, then dismiss or apply a suggestion. Try text with no matching offline rules.
+- Copy with and without a signature; verify that the clipboard contains no subject line.
+- Toggle theme and reopen; clear the draft and verify the signature survives.
 - With Ollama disabled, verify no requests in the panel's DevTools Network tab.
-- Enable Ollama, approve localhost permission, test a locally installed model, then test a missing model and stopped server. Disable it and verify offline behavior.
+- Enable Ollama, approve permission, discover models, and try a local model. Test a missing model, stopped server, cancellation and edits during a request. Disable it and verify offline behavior.
 
-No backend, API keys, email permissions, external fonts or CDNs are required. The service worker only configures toolbar-to-side-panel behavior. Rendered suggestions use text values, never HTML.
+No backend, API keys, email permissions, external fonts or CDNs are required. The service worker configures toolbar-to-side-panel behavior. Suggestions are rendered as text, never HTML.
